@@ -1,8 +1,16 @@
-h=0.01;lambda=5;uniform=1;condition=2;
+h=0.05;lambda=5;uniform=1;condition=2;
 V = @(x) [-x(2),x(1)];
 %% 
 Tri = CreateTriMesh2D(h,lambda,uniform,condition,V);
 save(['Tri_2D_',num2str(h),'_',num2str(lambda),'_',num2str(uniform),'_',num2str(condition),'_',func2str(V),'.mat'],'Tri');
+
+%% Ecrire les équations 
+disp('1) -D\nabla^{2}u(x) = f(x)');
+disp('2) \partial_{t}u(t,x) + \vec V(x).\nabla u(t,x) = f(x)');
+disp('3) \partial_{t}u(t,x) -D\nabla^{2}u(t,x) + \vec V(x).\nabla u(t,x) = f(x)');
+disp('4) -D\nabla^{2}u(t,x) + \beta u(t,x) = f(x)');
+disp('5) \partial_{t}u(t,x) -D\nabla^{2}u(t,x) + \beta u(t,x) = f(x)');
+
 %% 
 load(['Tri_2D_',num2str(h),'_',num2str(lambda),'_',num2str(uniform),'_',num2str(condition),'_',func2str(V),'.mat']);
 equation=6;
@@ -27,12 +35,15 @@ for i=1:size(Centre_tri,2)
     end
 end
 u_e0 = zeros(size(Centre_tri,2),1);
+unif = linspace(0,2*pi,1000);
 for i=1:size(Centre_tri,2)
     %if pdist([Centre_tri(:,i)';lambda*[-0.25,0.25]])<100*h
-        u_e0(i,1) = exp(-pdist([Centre_tri(:,i)';lambda*[-0.25,0.25]]))+exp(-pdist([Centre_tri(:,i)';lambda*[0.25,-0.25]]));
+    lissajous = pdist([Centre_tri(:,i)';sqrt(lambda)*[sin(5*unif'),cos(3*unif')]]);
+    u_e0(i,1) = sum(lissajous(1,1:size(unif,2))<h);
+        %= exp(-pdist([Centre_tri(:,i)';lambda*[-0.25,0.25]]))+exp(-pdist([Centre_tri(:,i)';lambda*[0.25,-0.25]]));
     %end
 end
-Delta_t = 0.00001;
+Delta_t = 0.01;
 %% 
 format long;
 h=0.01;
@@ -256,11 +267,11 @@ elseif equation==4
     g_nut = @(x) 0;
     h_nut = @(x) 0;
 elseif equation==5
-    nbr_en=50;
-    r_alea = lambda*rand(nbr_en,1);
-    theta_alea = 2*pi*rand(nbr_en,1);
-    alea = r_alea.*[cos(theta_alea),sin(theta_alea)];
-    f_nut = @(x) 1;%sum(1*(pdist([x;alea])<3*h));
+%     nbr_en=50;
+%     r_alea = lambda*rand(nbr_en,1);
+%     theta_alea = 2*pi*rand(nbr_en,1);
+%     alea = r_alea.*[cos(theta_alea),sin(theta_alea)];
+    f_nut = @(x) 0;%sum(1*(pdist([x;alea])<3*h));
     g_nut = @(x) 0;
     h_nut = @(x) 0;
     f_cel = @(x) 0;
@@ -285,6 +296,8 @@ if equation==1
     
 elseif equation==2
     [A,b] = matrice_tri(Tri,f_conv,g_conv,h_conv,equation);
+    schema = input('Schéma : 1) explicite 2) implicite ? ');
+    Delta_t = input('\Delta t = ');
     T = input('T = ? ');
     i=1;
     figure;
@@ -293,8 +306,11 @@ elseif equation==2
     title(['t = ',num2str(0),' s']);
     axis square;
     while (i*Delta_t<T)
-        u = (speye(size(u,1))+Delta_t*A./Volume)*u +Delta_t*b./Volume';%Schéma explicite
-        %u = (2*eye(size(u,1))-A)\(u+b);%Schéma implicite
+        if schema==1
+            u = (speye(size(u,1))-Delta_t*A_cel./Volume)*u +Delta_t*b_cel./Volume';
+        elseif schema==2
+            u = (speye(size(u,1))+Delta_t*A_cel./Volume)\(u +Delta_t*b_cel./Volume');
+        end
         if i*Delta_t*10==floor(i*Delta_t*10)
             scatter(Centre_tri(1,:),Centre_tri(2,:),[],u,'filled')
             axis square;
@@ -310,6 +326,8 @@ elseif equation==2
     
 elseif equation==3
     [A,b] = matrice_tri(Tri,f,g,h,equation);
+    schema = input('Schéma : 1) explicite 2) implicite ? ');
+    Delta_t = input('\Delta t = ');
     T = input('T = ? ');
     i=1;
     figure('units','normalized','outerposition',[0 0 1 1]);
@@ -320,8 +338,11 @@ elseif equation==3
     scatter(Centre_tri(1,:),Centre_tri(2,:),[],u0,'filled')
     title(['t = ',num2str(0),' s']);
     while (i*Delta_t<T)
-        u = (speye(size(u,1))+Delta_t*A./Volume)*u +Delta_t*b./Volume' ;%Schéma explicite
-        %u = (2*eye(size(u,1))-A)\(u+b);%Schéma implicite
+        if schema==1
+            u = (speye(size(u,1))-Delta_t*A_cel./Volume)*u +Delta_t*b_cel./Volume';
+        elseif schema==2
+            u = (speye(size(u,1))+Delta_t*A_cel./Volume)\(u +Delta_t*b_cel./Volume');
+        end
         if i*Delta_t*10==floor(i*Delta_t*10)
             scatter(Centre_tri(1,:),Centre_tri(2,:),[],u,'filled')
             axis square;
@@ -350,14 +371,19 @@ elseif equation==5
     u=u0;
     gamma = 1;%input('Gamma = ');
     chi = 100;%input('chi = ');
+    schema = input('Schéma : 1) explicite 2) implicite ? ');
+    alpha = 1;
     k=2;
+    tumorsize = [Volume*(u0>10e-5)];
+    tumormass = [Volume*u0];
     T = 100;%input('T = ');
     [A_nut,b_nut]=matrice_tri(Tri,f_nut,g_nut,h_nut,4);
     A_nut_act = A_nut;
     for i=1:size(A_nut,1)
         A_nut_act(i,i) = A_nut(i,i) + Volume(1,i)*gamma*u(i,1);
+        b_nut_act(i,1) = b_nut(i,1) + Volume(1,i)*alpha*u_e0(i,1);
     end
-    Nutriment = A_nut_act\b_nut;
+    Nutriment = A_nut_act\b_nut_act;
     [A_cel,b_cel]=matrice_tri(Tri,f_cel,g_cel,h_cel,equation);    
     for i=1:size(A_cel,1)
         for j=1:size(TN,2)
@@ -368,14 +394,23 @@ elseif equation==5
             end
         end
     end
-    u = (speye(size(u,1))-Delta_t*A_cel./Volume)*u +Delta_t*b_cel./Volume';
+    if schema==1
+        Delta_t = input('\Delta t = ');
+        u = (speye(size(u,1))-Delta_t*A_cel./Volume)*u +Delta_t*b_cel./Volume';
+    elseif schema==2
+        Delta_t = input('\Delta t = ');
+        u = mldivide(speye(size(u,1))+Delta_t*A_cel./Volume,u +Delta_t*b_cel./Volume');
+    end
+    tumorsize(end+1) = Volume*(u>10e-5);
+    tumormass(end+1) = Volume*u;
     figure('units','normalized','outerposition',[0 0 1 1]);
     while (k*Delta_t<T)
         A_nut_act = A_nut;
         for i=1:size(A_nut,1)
             A_nut_act(i,i) = A_nut(i,i) + Volume(1,i)*gamma*u(i,1);
+            b_nut_act(i,1) = b_nut(i,1) + Volume(1,i)*alpha*u_e0(i,1);
         end
-        Nutriment = A_nut_act\b_nut;
+        Nutriment = A_nut_act\b_nut_act;
         for i=1:size(A_cel,1)
             for j=1:size(TN,2)
                 if isnan(TN(i,j))
@@ -385,24 +420,40 @@ elseif equation==5
                 end
             end
         end
-        u = (speye(size(u,1))-Delta_t*A_cel./Volume)*u +Delta_t*b_cel./Volume';
+        if schema==1
+            u = (speye(size(u,1))-Delta_t*A_cel./Volume)*u +Delta_t*b_cel./Volume';
+        elseif schema==2
+            u = mldivide(speye(size(u,1))+Delta_t*A_cel./Volume,u +Delta_t*b_cel./Volume');
+        end
+        tumorsize(end+1) = Volume*(u>10e-5);
+        tumormass(end+1) = Volume*u;
         if k*Delta_t*10==floor(k*Delta_t*10)
-            ax(1)=subplot(1,2,1);
+            ax(1)=subplot(2,2,1);
             scatter(Centre_tri(1,:),Centre_tri(2,:),2.5,u,'filled')
             colormap(ax(1),flipud(hot));
             axis square;
             c1 = colorbar;
             c1.Label.String = 'u (concentration)';
-            title('Tumor cells');
-            ax(2)=subplot(1,2,2);
+            title({'Tumor cells','\partial_{t}u-D_{u}\nabla^{2}u +\chi\nabla.(u\nabla c)= ru '});
+            ax(2)=subplot(2,2,2);
             colormap(ax(2),flipud(summer));
             scatter(Centre_tri(1,:),Centre_tri(2,:),2.5,Nutriment,'filled')
             axis square;
             c2 = colorbar;
             c2.Label.String = 'c (concentration)';
-            title('Nutrients');
+            title({'Nutrients','-D_{c}\nabla^{2} c+\beta c = \alpha u_{e} - \gamma u c'});
+            ax(3)=subplot(2,2,[3,4]);
+            hold on;
+            yyaxis left;
+            plot(0:Delta_t:k*Delta_t,tumorsize);
+            yyaxis right;
+            plot(0:Delta_t:k*Delta_t,tumormass);
+            legend({'Tumor size','Tumor mass'},'Location','northwest');
+            xlabel('Time');
+            hold off;
+            title({'Tumor volume and mass'});
             %
-            suptitle({['\partial_{t}u-D_{u}\nabla^{2}u +\chi\nabla.(u\nabla c)= ru '],[' -D_{c}\nabla^{2} c+\beta c = \alpha u_{e} - \gamma u c'],['t = ',num2str(k*Delta_t),' s']});
+            suptitle({['t = ',num2str(k*Delta_t)],['\Delta t = ',num2str(Delta_t)]});
             drawnow
         end
         k=k+1;
@@ -414,6 +465,9 @@ elseif equation==5
     alpha = 1;%input('Alpha = ');
     gamma = 1;%input('Gamma = ');
     chi = 1;%input('chi = ');
+    schema = input('Schéma : 1) explicite 2) implicite ? ');
+    tumorsize = [Volume*(u0>10e-5)];
+    tumormass = [Volume*u0];
     k=2;
     T = 100;%input('T = ');
     [A_nut,b_nut]=matrice_tri(Tri,f_nut,g_nut,h_nut,4);
@@ -436,9 +490,21 @@ elseif equation==5
             end
         end
     end
-    u = (speye(size(u,1))-Delta_t*A_cel./Volume)*u +Delta_t*b_cel./Volume';
+    if schema==1
+        Delta_t = input('\Delta t = ');
+        u = (speye(size(u,1))-Delta_t*A_cel./Volume)*u +Delta_t*b_cel./Volume';
+    elseif schema==2
+        Delta_t = input('\Delta t = ');
+        u = (speye(size(u,1))+Delta_t*A_cel./Volume)\(u +Delta_t*b_cel./Volume');
+    end
     [A_end,b_end]=matrice_tri(Tri,f_end,g_end,h_end,5);
-    u_e = (speye(size(u_e,1))-Delta_t*A_end./Volume)*u_e +Delta_t*b_end./Volume';
+    if schema==1
+        u_e = (speye(size(u_e,1))-Delta_t*A_end./Volume)*u_e +Delta_t*b_end./Volume';
+    elseif schema==2
+        u_e = (speye(size(u_e,1))+Delta_t*A_end./Volume)\(u_e +Delta_t*b_end./Volume');
+    end
+    tumorsize(end+1) = Volume*(u>10e-5);
+    tumormass(end+1) = Volume*u;    
     figure('units','normalized','outerposition',[0 0 1 1]);
     while (k*Delta_t<T)
         A_nut_act = A_nut;
@@ -458,10 +524,20 @@ elseif equation==5
                 end
             end
         end
-        u = (speye(size(u,1))-Delta_t*A_cel./Volume)*u +Delta_t*b_cel./Volume';
-        u_e = (speye(size(u_e,1))-Delta_t*A_end./Volume)*u_e +Delta_t*b_end./Volume';
+        if schema==1
+            u = (speye(size(u,1))-Delta_t*A_cel./Volume)*u +Delta_t*b_cel./Volume';
+        elseif schema==2
+            u = (speye(size(u,1))+Delta_t*A_cel./Volume)\(u +Delta_t*b_cel./Volume');
+        end
+        if schema==1
+            u_e = (speye(size(u_e,1))-Delta_t*A_end./Volume)*u_e +Delta_t*b_end./Volume';
+        elseif schema==2
+            u_e = (speye(size(u_e,1))+Delta_t*A_end./Volume)\(u_e +Delta_t*b_end./Volume');
+        end
+        tumorsize(end+1) = Volume*(u>10e-5);
+        tumormass(end+1) = Volume*u;
         if k*Delta_t*50000==floor(k*Delta_t*50000)
-            ax(1)=subplot(2,2,1);
+            ax(1)=subplot(2,3,1);
             scatter(Centre_tri(1,:),Centre_tri(2,:),2.5,u,'filled')
             colormap(ax(1),flipud(hot));
             axis square;
@@ -470,7 +546,7 @@ elseif equation==5
             c1 = colorbar;
             c1.Label.String = 'u (concentration)';
             title({'Tumor cells','\partial_{t}u-D_{u}\nabla^{2}u +\chi\nabla.(u\nabla c)= ru '});
-            ax(2)=subplot(2,2,2);
+            ax(2)=subplot(2,3,2);
             colormap(ax(2),flipud(summer));
             scatter(Centre_tri(1,:),Centre_tri(2,:),2.5,Nutriment,'filled')
             axis square;
@@ -479,7 +555,7 @@ elseif equation==5
             c2 = colorbar;
             c2.Label.String = 'c (concentration)';
             title({'Nutrients',' -D_{c}\nabla^{2} c+\beta c = \alpha u_{e} - \gamma u c'});
-            ax(3)=subplot(2,2,3);
+            ax(3)=subplot(2,3,3);
             colormap(ax(3),flipud(bone));
             scatter(Centre_tri(1,:),Centre_tri(2,:),2.5,u_e,'filled')
             axis square;
@@ -488,8 +564,18 @@ elseif equation==5
             c3 = colorbar;
             c3.Label.String = 'u_{e} (concentration)';
             title({'Endothelial cells','\partial_{t}u_{e}-D_{e}\nabla^{2}u_{e} = r_{e}u_{e} '});
+            ax(4)=subplot(2,3,[4,5,6]);
+            hold on;
+            yyaxis left;
+            plot(0:Delta_t:k*Delta_t,tumorsize);
+            yyaxis right;
+            plot(0:Delta_t:k*Delta_t,tumormass);
+            legend({'Tumor size','Tumor mass'},'Location','northwest');
+            xlabel('Time');
+            hold off;
+            title({'Tumor volume and mass'});
             %
-            suptitle({['t = ',num2str(k*Delta_t),' s']});
+            suptitle({['t = ',num2str(k*Delta_t),' , ','\Delta t = ',num2str(Delta_t)]});
             drawnow
         end
         k=k+1;
