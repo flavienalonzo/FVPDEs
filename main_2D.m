@@ -1,4 +1,4 @@
-h=0.05;lambda=5;uniform=1;condition=2;
+h=0.05;lambda=1;uniform=1;condition=2;
 V = @(x) [-x(2),x(1)];
 %% 
 Tri = CreateTriMesh2D(h,lambda,uniform,condition,V);
@@ -13,7 +13,7 @@ disp('5) \partial_{t}u(t,x) -D\nabla^{2}u(t,x) + \beta u(t,x) = f(x)');
 
 %% 
 load(['Tri_2D_',num2str(h),'_',num2str(lambda),'_',num2str(uniform),'_',num2str(condition),'_',func2str(V),'.mat']);
-equation=6;
+equation=7;
 
 %% 
 Points = Tri{1};
@@ -30,18 +30,20 @@ Long_segment = Tri{10};
 %% 
 u0 = zeros(size(Centre_tri,2),1);
 for i=1:size(Centre_tri,2)
-    if pdist([Centre_tri(:,i)';lambda*[0.15,0.15]])<10*h
-        u0(i,1) = 1;
+    if pdist([Centre_tri(:,i)';lambda*[0,0]])<lambda*0.05
+        u0(i,1) = 0.5;
     end
 end
 u_e0 = zeros(size(Centre_tri,2),1);
 unif = linspace(0,2*pi,1000);
 for i=1:size(Centre_tri,2)
     %if pdist([Centre_tri(:,i)';lambda*[-0.25,0.25]])<100*h
-    lissajous = pdist([Centre_tri(:,i)';sqrt(lambda)*[sin(5*unif'),cos(3*unif')]]);
-    u_e0(i,1) = sum(lissajous(1,1:size(unif,2))<h);
+%     lissajous = pdist([Centre_tri(:,i)';sqrt(lambda)*[sin(5*unif'),cos(3*unif')]]);
+%     u_e0(i,1) = sum(lissajous(1,1:size(unif,2))<h);
         %= exp(-pdist([Centre_tri(:,i)';lambda*[-0.25,0.25]]))+exp(-pdist([Centre_tri(:,i)';lambda*[0.25,-0.25]]));
     %end
+    chamoun = pdist([Centre_tri(:,i)';lambda*[-0.5,0;0,0.5;0.5,0;0,-0.5]]);
+    u_e0(i,1) = 5*sum(chamoun(1,1:4)<lambda*0.05);
 end
 Delta_t = 0.01;
 %% 
@@ -287,6 +289,16 @@ elseif equation==6
     f_end = @(x) 0;
     g_end = @(x) 0;
     h_end = @(x) 0;
+elseif equation==7
+    f_nut = @(x) 0;
+    g_nut = @(x) 0;
+    h_nut = @(x) 0;
+    f_cel = @(x) 0;
+    g_cel = @(x) 0;
+    h_cel = @(x) 0;
+    f_end = @(x) 0;
+    g_end = @(x) 0;
+    h_end = @(x) 0;
 end
 
 %% Création des matrices A et b et résolution de Au=b
@@ -462,9 +474,9 @@ elseif equation==5
     elseif equation==6
     u=u0;
     u_e=u_e0;
-    alpha = 1;%input('Alpha = ');
-    gamma = 1;%input('Gamma = ');
-    chi = 1;%input('chi = ');
+    alpha = 1e-2;%input('Alpha = ');
+    gamma = 0;%input('Gamma = ');
+    chi = 5e-3;%input('chi = ');
     schema = input('Schéma : 1) explicite 2) implicite ? ');
     tumorsize = [Volume*(u0>10e-5)];
     tumormass = [Volume*u0];
@@ -576,6 +588,89 @@ elseif equation==5
             title({'Tumor volume and mass'});
             %
             suptitle({['t = ',num2str(k*Delta_t),' , ','\Delta t = ',num2str(Delta_t)]});
+            drawnow
+        end
+        k=k+1;
+    end
+    
+    elseif equation==7
+        u=u0;
+        u_e=u_e0;
+        tol=0.001;
+        alpha = 1e-2;gamma = 0;chi = 5e-2;r=0;D = 5e-3;
+        f = @(x)  D*x*(1-x); f_prime = @(x) D*(1-2*x);
+        g = @(x) chi*x*(1-x) ; g_prime = @(x) chi*(1-2*x);
+        h = @(x) r*x*(1-x); h_prime = @(x) r*(1-2*x) ;
+        Delta_t = input('\Delta t = ');
+        %schema = input('Schéma : 1) explicite 2) implicite ? ');
+        tumorsize = [Volume*(u0>10e-5)];tumormass = [Volume*u0];
+        k=2;
+        T = 100;%input('T = ');
+        [A_nut,b_nut]=matrice_tri(Tri,f_nut,g_nut,h_nut,4);
+        A_nut_act = A_nut; b_nut_act = b_nut;
+        for i=1:size(A_nut,1)
+                A_nut_act(i,i) = A_nut(i,i) + Volume(1,i)*gamma*u(i,1);
+                b_nut_act(i,1) = b_nut(i,1) + Volume(1,i)*alpha*u_e(i,1);
+        end
+        Nutriment = A_nut_act\b_nut_act;
+        F = @(x) fonctionnelle(x,f,f_prime,g,g_prime,h,h_prime,TN,Coef_trans,Volume,Nutriment,Delta_t,u);
+        grad_F = @(x) gradient_fonctionnelle(x,f,f_prime,g,g_prime,h,h_prime,TN,Coef_trans,Volume,Nutriment,Delta_t);
+        v = grad_F(u)\(grad_F(u)*u-F(u));
+        while norm(v-u,2)>tol
+            u=v;
+            F = @(x) fonctionnelle(x,f,f_prime,g,g_prime,h,h_prime,TN,Coef_trans,Volume,Nutriment,Delta_t,u);
+            v = grad_F(u)\(grad_F(u)*u-F(u));
+            disp(norm(v-u,2));
+        end
+        u=v;
+        tumorsize(end+1) = Volume*(u>10e-5);
+    tumormass(end+1) = Volume*u;
+    figure('units','normalized','outerposition',[0 0 1 1]);
+    while (k*Delta_t<T)
+        A_nut_act = A_nut;
+        for i=1:size(A_nut,1)
+            A_nut_act(i,i) = A_nut(i,i) + Volume(1,i)*gamma*u(i,1);
+            b_nut_act(i,1) = b_nut(i,1) + Volume(1,i)*alpha*u_e0(i,1);
+        end
+        Nutriment = A_nut_act\b_nut_act;
+        F = @(x) fonctionnelle(x,f,f_prime,g,g_prime,h,h_prime,TN,Coef_trans,Volume,Nutriment,Delta_t,u);
+        grad_F = @(x) gradient_fonctionnelle(x,f,f_prime,g,g_prime,h,h_prime,TN,Coef_trans,Volume,Nutriment,Delta_t);
+        v = grad_F(u)\(grad_F(u)*u-F(u));
+        while norm(v-u,2)>tol
+            u=v;
+            F = @(x) fonctionnelle(x,f,f_prime,g,g_prime,h,h_prime,TN,Coef_trans,Volume,Nutriment,Delta_t,u);
+            v = grad_F(u)\(grad_F(u)*u-F(u));
+        end
+        u=v;
+        tumorsize(end+1) = Volume*(u>10e-5);
+        tumormass(end+1) = Volume*u;
+        if k*Delta_t*10==floor(k*Delta_t*10)
+            ax(1)=subplot(2,2,1);
+            scatter(Centre_tri(1,:),Centre_tri(2,:),2.5,u,'filled')
+            colormap(ax(1),flipud(hot));
+            axis square;
+            c1 = colorbar;
+            c1.Label.String = 'u (concentration)';
+            title({'Tumor cells','\partial_{t}u-D_{u}\nabla^{2}u +\chi\nabla.(u\nabla c)= ru '});
+            ax(2)=subplot(2,2,2);
+            colormap(ax(2),flipud(summer));
+            scatter(Centre_tri(1,:),Centre_tri(2,:),2.5,Nutriment,'filled')
+            axis square;
+            c2 = colorbar;
+            c2.Label.String = 'c (concentration)';
+            title({'Nutrients','-D_{c}\nabla^{2} c+\beta c = \alpha u_{e} - \gamma u c'});
+            ax(3)=subplot(2,2,[3,4]);
+            hold on;
+            yyaxis left;
+            plot(0:Delta_t:k*Delta_t,tumorsize);
+            yyaxis right;
+            plot(0:Delta_t:k*Delta_t,tumormass);
+            legend({'Tumor size','Tumor mass'},'Location','northwest');
+            xlabel('Time');
+            hold off;
+            title({'Tumor volume and mass'});
+            %
+            suptitle({['t = ',num2str(k*Delta_t)],['\Delta t = ',num2str(Delta_t)]});
             drawnow
         end
         k=k+1;
