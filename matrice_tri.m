@@ -150,8 +150,8 @@ function [A,b] = matrice_tri(Tri,f,g,h,equation)
     elseif equation==5
         A = sparse(NbTri,NbTri);
         b = sparse(NbTri,1);
-        D = 1.05e-3;
-        r = 1.07e-3;
+        D = 5e-2;
+        r = 0;
         wbm = waitbar(0,'Building A and b');
         for i=1:NbTri       
            waitbar(i/NbTri,wbm);
@@ -181,6 +181,7 @@ function [A,b] = matrice_tri(Tri,f,g,h,equation)
                end
            end
         end
+        
     end
     close(wbm);
 end
