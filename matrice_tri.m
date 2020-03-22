@@ -114,8 +114,8 @@ function [A,b] = matrice_tri(Tri,f,g,h,equation)
             end
         end
     elseif equation==4
-        beta = input('beta = ');
-        D = input('D = ');
+        beta = 5e-2;%input('beta = ');
+        D = 1e-4;%input('D = ');
         A = sparse(NbTri,NbTri);
         b = sparse(NbTri,1);
         wbm = waitbar(0,'Building A and b');
