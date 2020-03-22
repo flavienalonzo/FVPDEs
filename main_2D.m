@@ -1,4 +1,4 @@
-h=0.05;lambda=1;uniform=1;condition=2;
+h=0.01;lambda=5;uniform=1;condition=2;
 V = @(x) [-x(2),x(1)];
 %% 
 Tri = CreateTriMesh2D(h,lambda,uniform,condition,V);
@@ -27,11 +27,34 @@ Coef_trans = Tri{8};
 Volume = Tri{9};
 Long_segment = Tri{10};
 
+%% Enregistrer le fichier.mat en .txt
+fileID = fopen(['Tri_2D_',num2str(h),'_',num2str(lambda),'_',num2str(uniform),'_',num2str(condition),'_',func2str(V),'.txt'],'w');
+fprintf(fileID,'%7i %7i\n',size(Points));
+fprintf(fileID,'%3.14f %3.14f\n',Points);
+fprintf(fileID,'%7i %7i\n',size(ConnectivityList));
+fprintf(fileID,'%7i %7i %7i\n',ConnectivityList);
+fprintf(fileID,'%7i %7i\n',size(Eall));
+fprintf(fileID,'%7i %7i\n',Eall);
+fprintf(fileID,'%7i %7i\n',size(Typesegment'));
+fprintf(fileID,'%7i\n',Typesegment');
+fprintf(fileID,'%7i %7i\n',size(TN));
+fprintf(fileID,'%7i %7i %7i\n',TN);
+fprintf(fileID,'%7i %7i\n',size(Centre_tri'));
+fprintf(fileID,'%3.14f %3.14f\n',Centre_tri');
+fprintf(fileID,'%7i %7i\n',size(Dist_tri));
+fprintf(fileID,'%3.14f %3.14f\n',Dist_tri);
+fprintf(fileID,'%7i %7i\n',size(Coef_trans));
+fprintf(fileID,'%3.14f %3.14f %3.14f\n',Coef_trans);
+fprintf(fileID,'%7i %7i\n',size(Volume'));
+fprintf(fileID,'%3.14f\n',Volume');
+fprintf(fileID,'%7i %7i\n',size(Long_segment'));
+fprintf(fileID,'%3.14f\n',Long_segment');
+fclose(fileID);
 %% 
 u0 = zeros(size(Centre_tri,2),1);
 for i=1:size(Centre_tri,2)
     if pdist([Centre_tri(:,i)';lambda*[0,0]])<lambda*0.05
-        u0(i,1) = 0.5;
+        u0(i,1) = 0.5;%1*(1-pdist([Centre_tri(:,i)';lambda*[0,0]]));
     end
 end
 u_e0 = zeros(size(Centre_tri,2),1);
@@ -471,7 +494,7 @@ elseif equation==5
         k=k+1;
     end
     
-    elseif equation==6
+ elseif equation==6
     u=u0;
     u_e=u_e0;
     alpha = 1e-2;%input('Alpha = ');
@@ -593,73 +616,88 @@ elseif equation==5
         k=k+1;
     end
     
-    elseif equation==7
-        u=u0;
-        u_e=u_e0;
-        tol=0.001;
-        alpha = 1e-2;gamma = 0;chi = 5e-2;r=0;D = 5e-3;
-        f = @(x)  D*x*(1-x); f_prime = @(x) D*(1-2*x);
-        g = @(x) chi*x*(1-x) ; g_prime = @(x) chi*(1-2*x);
-        h = @(x) r*x*(1-x); h_prime = @(x) r*(1-2*x) ;
-        Delta_t = input('\Delta t = ');
-        %schema = input('Schéma : 1) explicite 2) implicite ? ');
-        tumorsize = [Volume*(u0>10e-5)];tumormass = [Volume*u0];
-        k=2;
-        T = 100;%input('T = ');
-        [A_nut,b_nut]=matrice_tri(Tri,f_nut,g_nut,h_nut,4);
-        A_nut_act = A_nut; b_nut_act = b_nut;
-        for i=1:size(A_nut,1)
-                A_nut_act(i,i) = A_nut(i,i) + Volume(1,i)*gamma*u(i,1);
-                b_nut_act(i,1) = b_nut(i,1) + Volume(1,i)*alpha*u_e(i,1);
-        end
-        Nutriment = A_nut_act\b_nut_act;
-        F = @(x) fonctionnelle(x,f,f_prime,g,g_prime,h,h_prime,TN,Coef_trans,Volume,Nutriment,Delta_t,u);
-        grad_F = @(x) gradient_fonctionnelle(x,f,f_prime,g,g_prime,h,h_prime,TN,Coef_trans,Volume,Nutriment,Delta_t);
-        v = grad_F(u)\(grad_F(u)*u-F(u));
-        while norm(v-u,2)>tol
-            u=v;
-            F = @(x) fonctionnelle(x,f,f_prime,g,g_prime,h,h_prime,TN,Coef_trans,Volume,Nutriment,Delta_t,u);
-            v = grad_F(u)\(grad_F(u)*u-F(u));
-            disp(norm(v-u,2));
-        end
-        u=v;
-        tumorsize(end+1) = Volume*(u>10e-5);
+ elseif equation==7
+    u=u0;
+    u_e=u_e0;
+    tol=1e-14;
+    alpha = 1e-2;gamma = 0;chi = 5e-3;r=0;D = 5e-2;
+    f = @(x)  D*x; f_prime = @(x) D;
+    g = @(x) chi*x ; g_prime = @(x) chi;
+    h = @(x) r*x*(1-x); h_prime = @(x) r*(1-2*x) ;
+    Delta_t = input('\Delta t = ');
+    %schema = input('Schéma : 1) explicite 2) implicite ? ');
+    tumorsize = [Volume*(u0>10e-5)];tumormass = [Volume*u0];
+    k=2;
+    T = 100;%input('T = ');
+    [A_nut,b_nut]=matrice_tri(Tri,f_nut,g_nut,h_nut,4);
+    A_nut_act = A_nut;
+    b_nut_act = b_nut;
+    for i=1:size(A_nut,1)
+        A_nut_act(i,i) = A_nut(i,i) + Volume(1,i)*gamma*u(i,1);
+        b_nut_act(i,1) = b_nut(i,1) + Volume(1,i)*alpha*u_e(i,1);
+    end
+    Nutriment = A_nut_act\b_nut_act;
+    U_n=u;
+    Fonc = @(x)fonctionnelle(x,f,f_prime,g,g_prime,h,h_prime,TN,Coef_trans,Volume,Nutriment,Delta_t,U_n);
+    gradFonc = @(x)gradient_fonctionnelle(x,f,f_prime,g,g_prime,h,h_prime,TN,Coef_trans,Volume,Nutriment,Delta_t);
+    Du = -gradFonc(U_n)\Fonc(U_n);
+    u = u + Du;
+    while sum(abs(Fonc(u)))>tol
+        Du = -gradFonc(u)\Fonc(u);
+        u = u + Du;
+        disp(sum(abs(Fonc(u))));
+    end
+    [A_end,b_end]=matrice_tri(Tri,f_end,g_end,h_end,5);
+    u_e = (speye(size(u_e,1))+Delta_t*A_end./Volume)\(u_e +Delta_t*b_end./Volume');
+    tumorsize(end+1) = Volume*(u>10e-5);
     tumormass(end+1) = Volume*u;
     figure('units','normalized','outerposition',[0 0 1 1]);
     while (k*Delta_t<T)
         A_nut_act = A_nut;
+        b_nut_act = b_nut;
         for i=1:size(A_nut,1)
             A_nut_act(i,i) = A_nut(i,i) + Volume(1,i)*gamma*u(i,1);
-            b_nut_act(i,1) = b_nut(i,1) + Volume(1,i)*alpha*u_e0(i,1);
+            b_nut_act(i,1) = b_nut(i,1) + Volume(1,i)*alpha*u_e(i,1);
         end
         Nutriment = A_nut_act\b_nut_act;
-        F = @(x) fonctionnelle(x,f,f_prime,g,g_prime,h,h_prime,TN,Coef_trans,Volume,Nutriment,Delta_t,u);
-        grad_F = @(x) gradient_fonctionnelle(x,f,f_prime,g,g_prime,h,h_prime,TN,Coef_trans,Volume,Nutriment,Delta_t);
-        v = grad_F(u)\(grad_F(u)*u-F(u));
-        while norm(v-u,2)>tol
-            u=v;
-            F = @(x) fonctionnelle(x,f,f_prime,g,g_prime,h,h_prime,TN,Coef_trans,Volume,Nutriment,Delta_t,u);
-            v = grad_F(u)\(grad_F(u)*u-F(u));
+        U_n=u;
+        Fonc = @(x)fonctionnelle(x,f,f_prime,g,g_prime,h,h_prime,TN,Coef_trans,Volume,Nutriment,Delta_t,U_n);
+        gradFonc = @(x)gradient_fonctionnelle(x,f,f_prime,g,g_prime,h,h_prime,TN,Coef_trans,Volume,Nutriment,Delta_t);
+        Du = -gradFonc(U_n)\Fonc(U_n);
+        u = u + Du;
+        while sum(abs(Fonc(u)))>tol
+            Du = -gradFonc(u)\Fonc(u);
+            u = u + Du;
+            disp(sum(abs(Fonc(u))));
         end
-        u=v;
+        u_e = (speye(size(u_e,1))+Delta_t*A_end./Volume)\(u_e +Delta_t*b_end./Volume');
         tumorsize(end+1) = Volume*(u>10e-5);
         tumormass(end+1) = Volume*u;
         if k*Delta_t*10==floor(k*Delta_t*10)
-            ax(1)=subplot(2,2,1);
+            ax(1)=subplot(2,3,1);
             scatter(Centre_tri(1,:),Centre_tri(2,:),2.5,u,'filled')
             colormap(ax(1),flipud(hot));
             axis square;
             c1 = colorbar;
             c1.Label.String = 'u (concentration)';
             title({'Tumor cells','\partial_{t}u-D_{u}\nabla^{2}u +\chi\nabla.(u\nabla c)= ru '});
-            ax(2)=subplot(2,2,2);
+            ax(2)=subplot(2,3,2);
             colormap(ax(2),flipud(summer));
             scatter(Centre_tri(1,:),Centre_tri(2,:),2.5,Nutriment,'filled')
             axis square;
             c2 = colorbar;
             c2.Label.String = 'c (concentration)';
             title({'Nutrients','-D_{c}\nabla^{2} c+\beta c = \alpha u_{e} - \gamma u c'});
-            ax(3)=subplot(2,2,[3,4]);
+            ax(3)=subplot(2,3,3);
+            colormap(ax(3),flipud(bone));
+            scatter(Centre_tri(1,:),Centre_tri(2,:),2.5,u_e,'filled')
+            axis square;
+            grid(ax(3),'on');
+            grid minor;
+            c3 = colorbar;
+            c3.Label.String = 'u_{e} (concentration)';
+            title({'Endothelial cells','\partial_{t}u_{e}-D_{e}\nabla^{2}u_{e} = r_{e}u_{e} '});
+            ax(4)=subplot(2,3,[4,5,6]);
             hold on;
             yyaxis left;
             plot(0:Delta_t:k*Delta_t,tumorsize);
