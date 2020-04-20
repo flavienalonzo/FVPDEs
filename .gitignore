@@ -1,2 +1,7 @@
 
 *.mat
+**/*.vtk
+__MACOSX
+.DS_Store
+**/*.swp
+**/*.swo

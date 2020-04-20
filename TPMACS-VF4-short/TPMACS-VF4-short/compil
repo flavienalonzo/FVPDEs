@@ -1,0 +1,8 @@
+mv -f objets/*.o .
+mv -f objets/*.mod .
+make
+mv -f *.o objets
+mv -f *.mod objets
+
+ln -f mainvf4 Lestests/
+
