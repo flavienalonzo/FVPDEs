@@ -33,6 +33,13 @@ OBJS	      = longr.o\
 		actuNutri.o \
 		assembleNutri.o \
 		MethNewtonMul.o \
+		bigmatrix.o \
+		actubigmatrix.o \
+		NodeConnectivity.o \
+		approxGrad.o \
+		assembleTumor.o \
+		assemInstaNutri.o \
+		assemInstaTumor.o \
 		KellerSegel.o 
 
 $(PROG): $(OBJS)

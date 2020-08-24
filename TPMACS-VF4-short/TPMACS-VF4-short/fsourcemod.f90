@@ -159,19 +159,16 @@ FUNCTION fsource(x,y, m)
     case(8) ! ici V=1, et u=x+y
        fsource=2+ theta *(x+y)
     case(10) 
-      if (0.45<=x.and.x<=0.55.and.0.65<=y.and.y<=0.75) then
-         fsource = 0.7
-      else if (0.45<=x.and.x<=0.55.and.0.15<=y.and.y<=0.25) then
-         fsource = 0.7
-      else if (0.7<=x.and.x<=0.8.and.0.45<=y.and.y<=0.55) then
-         fsource = 0.7
-      else if (0.2<=x.and.x<=0.3.and.0.45<=y.and.y<=0.55) then
-         fsource = 0.7
-      else
-         fsource = 0
-      end if
-      !fsource = 5*exp(-10*norm2((/x,y/)-(/0.5,0.75/))) + 5*exp(-10*norm2((/x,y/)-(/0.5,0.25/))) &
-      !& + 5*exp(-10*norm2((/x,y/)-(/0.25,0.5/))) + 5*exp(-10*norm2((/x,y/)-(/0.75,0.5/))) 
+      !if (0.5>=x) then
+      fsource = 0.23*EXP(LOG(4.)*(((x-0.39)/0.4))**2+((y-0.5)/0.5)**2)   
+      !fsource = 3.5D-1+0.1*cos(4*pi*x)*sin(4*pi*y)
+         !9.9D-1*max(1-2*x,0.D0)
+      !else
+      !   fsource = 0
+      !end if
+   case(11)
+      fsource = 5.D-1
+      !1- 0.45*exp(-(norm2((/x,y/)-(/0.5,0.75/)))**2/0.45)  
     end Select
     !----------------
     ! Fin du programme
@@ -187,7 +184,7 @@ FUNCTION fsource(x,y, m)
       REAL(kind=long), INTENT(IN) :: x,y
       REAL(kind=long) :: z 
       if (0.45<=x.and.x<=0.55.and.0.45<=y.and.y<=0.55) then 
-         z = 0.5 !z = 0.5*exp(-30*norm2((/x,y/)-(/0.5,0.5/))) 
+         z = 0.5*exp(-30*norm2((/x,y/)-(/0.5,0.5/))) 
       else 
          z = 0
       end if

@@ -24,76 +24,165 @@ module parameters
         end select
     end function f_vol
 
+    function num2string(num) result(str)
+        implicit none
+        integer, intent(in) :: num
+        character(:), allocatable :: str
+        character(range(num) + 2) :: tmp
+        write (tmp,'(i0)') num
+        str = trim(adjustl(tmp))
+    end function num2string
 
-    function diffusion(x,e,entity) result(y)
-        real (kind = long), intent(in) :: x,e
+    function diffusion(x,entity) result(y)
+        real (kind = long), dimension(n_enty), intent(in) :: x
         character(len=6), intent(in) :: entity
         real (kind = long) :: y 
-    select case(entity)
-    case('Endoth')
-        y = 0
-    case('u_norm')
-        y = Diff_u*( (1-e)**2*x**3/3 - (1-e)*x**4/2 + x**5/5)
-    end select
+        select case(entity)
+            case('Nutrim')
+                y = Coef_diffusion
+            case('Endoth')
+                y = 0.
+            case('u_norm')
+                y = Diff_u*x(index_norm)*(1-x(index_norm))
+            case('VasEGF')
+                y = 0.
+        end select
     end function diffusion 
 
-    function diffprime(x,e,entity) result(y)
-        real (kind = long), intent(in) :: x,e
-        character(len=6), intent(in) :: entity
+    function diffprime(x,entity,derivative) result(y)
+        real (kind = long), dimension(n_enty), intent(in) :: x
+        character(len=6), intent(in) :: entity,derivative
         real (kind = long) :: y 
         select case(entity)
+        case('Nutrim')
+            select case(derivative)
+            case default
+                y = 0
+            end select
         case('Endoth')
-            y = 0
+            select case(derivative)
+            case default
+                y = 0
+            end select
         case('u_norm')
-            y = Diff_u*x**2*(1-x-e)**2
-        end select
+            select case(derivative)
+            case('u_norm')
+                y = Diff_u*(1-2*x(index_norm))
+            case default
+                y = 0
+            end select
+            
+        case('VasEGF')
+            select case(derivative)
+                case default
+                    y = 0
+                end select
+            end select
     end function diffprime 
 
-    function chemo(x,e,entity) result(y) 
-        real (kind = long), intent(in) :: x,e
+    function chemo(x,entity) result(y) 
+        real (kind = long), dimension(n_enty), intent(in) :: x
         character(len=6), intent(in) :: entity
-        real (kind = long) :: y 
+        real (kind = long) :: y
         select case(entity)
-        case('Endoth')
+        case('Nutrim')
             y = 0
+        case('Endoth')
+            y = 0.
         case('u_norm')
-            y = chi*x*(1-x-e)**2
+            y = chi*x(index_norm)*(1-x(index_norm))
+        case('VasEGF')
+            y = 0
         end select
     end function chemo 
 
-    function chemoprime(x,e,entity) result(y) 
-        real (kind = long), intent(in) :: x,e
-        character(len=6), intent(in) :: entity
+    function chemoprime(x,entity,derivative) result(y) 
+        real (kind = long), dimension(n_enty), intent(in) :: x
+        character(len=6), intent(in) :: entity, derivative
         real (kind = long) :: y 
         select case(entity)
+        case('Nutrim')
+            select case(derivative)
+            case default
+                y = 0
+            end select
         case('Endoth')
-            y = 0
+            select case(derivative)
+            case default
+                y = 0
+            end select
         case('u_norm')
-            y = chi*( (1-x-e)**2 - 2*x*(1-x-e) )
+            select case(derivative)
+            case('u_norm')
+                y = chi*(1-2*x(index_norm))
+            case default
+                y = 0
+            end select
+            
+        case('VasEGF')
+            select case(derivative)
+            case default
+                y = 0
+            end select
         end select
     end function chemoprime 
 
-    function reaction(x,e,entity) result(y)
-        real (kind = long), intent(in) :: x,e
+    function reaction(x,entity) result(y)
+        real (kind = long), dimension(n_enty), intent(in) :: x
         character(len=6), intent(in) :: entity
         real (kind = long) :: y 
         select case(entity)
+        case('Nutrim')
+            y = 0
         case('Endoth')
             y = 0
         case('u_norm')
-            y = rate*x*(1-x-e)**2
+            if (x(index_nut)>seuil_hypo) then
+                y = rat_pop*x(index_norm)
+            else if(x(index_nut)<seuil_necro) then
+                y = -x(index_norm)
+            else 
+                y = 0
+            end if
+        case('VasEGF')
+            y = 0
         end select
     end function reaction 
 
-    function reactionprime(x,e,entity) result(y)
-        real (kind = long), intent(in) :: x,e
-        character(len=6), intent(in) :: entity
+    function reactionprime(x,entity,derivative) result(y)
+        real (kind = long), dimension(n_enty), intent(in) :: x
+        character(len=6), intent(in) :: entity, derivative
         real (kind = long) :: y 
         select case(entity)
+        case('Nutrim')
+            select case(derivative)
+            case default 
+                y = 0
+            end select
         case('Endoth')
-            y = 0
+            select case(derivative)
+            case default
+                y = 0
+            end select
         case('u_norm')
-            y =rate*( (1-x-e)**2 - 2*x*(1-x-e) )
+            select case(derivative)
+            case('u_norm')
+                if (x(index_nut)>seuil_hypo) then
+                    y = rat_pop
+                else if(x(index_nut)<seuil_necro) then
+                    y = -1
+                else 
+                    y = 0
+                end if
+            case default 
+                y = 0
+            end select
+            
+        case('VasEGF')
+            select case(derivative)
+            case default 
+                y = 0
+            end select
         end select
     end function reactionprime 
 

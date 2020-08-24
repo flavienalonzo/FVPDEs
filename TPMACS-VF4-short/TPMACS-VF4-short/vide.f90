@@ -13,7 +13,7 @@ subroutine vide( Mat )
     integer :: ii, ij 
     double precision :: coef 
 
-    do ii = 1, Nbt
+    do ii = 1, size(Mat%IndPL)-1
         do ij = Mat%IndPL(ii),Mat%IndPL( ii + 1 ) - 1
             !coef = Mat%TMat(ij)
             !call ajout(ii,Mat%Indc(ij),-coef,Mat)

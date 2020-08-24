@@ -1,4 +1,4 @@
-subroutine actuNutri(N,U,C,E)
+subroutine actuNutri(N,C,Tab_U)
 
     USE longr 
     USE imprime
@@ -7,14 +7,15 @@ subroutine actuNutri(N,U,C,E)
     implicit none
 
     type(MatCreux), intent(in) :: N 
-    double precision, dimension(Nbt), intent(in) :: U
+    double precision, dimension(n_enty,Nbt), intent(in) :: Tab_U
     double precision, dimension(Nbt), intent(out) :: C 
-    double precision, dimension(Nbt) :: N0, E 
+    double precision, dimension(Nbt) :: N0
 
     N0=0.D0
 
 
-    N%Bg = 0.5*(E*AireK*Coef_prod - Coef_cons*AireK*U + abs(E*AireK*Coef_prod - Coef_cons*AireK*U))
+    N%Bg = 0.5*(Tab_U(index_endo,:)*AireK*Coef_prod - Coef_cons*AireK*Tab_U(index_norm,:) &
+    & + abs(Tab_U(index_endo,:)*AireK*Coef_prod - Coef_cons*AireK*Tab_U(index_norm,:) ))
     C = bigradient(N, N%Bg,N0,5.d-10)
 
 

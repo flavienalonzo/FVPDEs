@@ -16,11 +16,11 @@ module parmmage
   REAL (kind = long), DIMENSION(:,:), POINTER :: CoordS, CoordK
   INTEGER,            DIMENSION(:,:), POINTER   :: NuSoK
   Integer , DIMENSION(:,:), ALLOCATABLE         :: NuMSeg
-  INTEGER,            DIMENSION(:,:), POINTER   :: NuVoisK
-  INTEGER,            DIMENSION(:)  , POINTER   :: ntyps,ntypt, ntypseg, NombVoisSeg
-  INTEGER                                       :: Nbs,Nbt,Ns,Nb, Nseg,NsInt,Nbord,Nsegint,Nsegbord 
+  INTEGER,            DIMENSION(:,:), POINTER   :: NuVoisK, NuTrS
+  INTEGER,            DIMENSION(:)  , POINTER   :: ntyps,ntypt, ntypseg, NombVoisSeg, NbrTrS
+  INTEGER                                       :: Nbs,Nbt,Ns,Nb, Nseg,NsInt,Nbord,Nsegint,Nsegbord, NmaxT
   INTEGER,            DIMENSION(:,:), POINTER :: NuSeg, NumTVoisSeg
-  REAL (kind = long), DIMENSION(:),   ALLOCATABLE ::  TauKL, dKL, AireK
+  REAL (kind = long), DIMENSION(:),   ALLOCATABLE ::  TauKL, dKL, AireK, AireS
 
   REAL(kind=long), DIMENSION(:,:), ALLOCATABLE  :: VitesseSeg
 

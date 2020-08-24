@@ -1,4 +1,4 @@
-subroutine assemblediffusionKS (A,U,E,entity)
+subroutine assemblediffusionKS (A,Tab_U,entity,Tab_entity,Tab_equa,equa,k_enty)
     USE longr
   USE imprime
   USE parmmage
@@ -10,13 +10,15 @@ subroutine assemblediffusionKS (A,U,E,entity)
   !--------------------------
   ! Declaration des arguments
   !--------------------------
-  TYPE(MatCreux)       :: A
-  real (kind = long), dimension(Nbt) :: U , E
+  TYPE(MatCreux), dimension(n_enty)      :: A
+  real (kind = long), dimension(n_enty,Nbt) :: Tab_U 
+  character(len=6), dimension(n_enty) :: Tab_entity, Tab_equa
+  character(len=6), intent(in) :: equa
   !----------------------------------
   ! Declaration des variables locales
   !----------------------------------
   CHARACTER(len=6)      :: oldprf, entity
-  INTEGER               :: is, js, ik, jL, iseg, ii, jv,  NcoefMat
+  INTEGER               :: is, js, ik, jL, iseg, ii, jv,  NcoefMat, k_enty, k
   REAL(kind=long)       :: coef, x1, y1 
 
   !-------------------
@@ -40,18 +42,120 @@ subroutine assemblediffusionKS (A,U,E,entity)
         ik= NumTVoisSeg(1,iseg); jL =NumTVoisSeg(2,iseg)
 
         !! contribution dans la ligne ik
-        CALL Ajout (ik, ik, delta/AireK(ik)*TauKL(iseg)*diffprime(U(ik),E(ik),entity),  A )
+        if (equa=='instat') then 
+            do k=1,n_enty
+               if (Tab_equa(k)==equa) then
+               CALL Ajout (ik, ik, delta/AireK(ik)*TauKL(iseg)*&
+               &diffprime(Tab_U(:,ik),entity,Tab_entity(k))*AireK(ik)/(AireK(ik)+AireK(jL))*Tab_U(k_enty,ik),  A(k) )
+               CALL Ajout (ik, ik, -delta/AireK(ik)*TauKL(iseg)*&
+               &diffprime(Tab_U(:,ik),entity,Tab_entity(k))*AireK(ik)/(AireK(ik)+AireK(jL))*Tab_U(k_enty,jL),  A(k) )
+               CALL Ajout (ik, ik, delta/AireK(ik)*TauKL(iseg)*&
+               &diffprime(Tab_U(:,ik),entity,Tab_entity(k))*AireK(ik)/(AireK(ik)+AireK(jL)),  A(k) )
+               end if
+            end do
+            CALL Ajout (ik, ik, delta/AireK(ik)*TauKL(iseg)*diffusion(Tab_U(:,jL),entity)&
+            &*AireK(ik)/(AireK(ik)+AireK(jL)),  A(k_enty) )
 
-        CALL Ajout (ik, jL, -delta/AireK(ik)*TauKL(iseg)*diffprime(U(jL),E(jL),entity), A )
+            do k=1,n_enty
+               if (Tab_equa(k)==equa) then
+                  CALL Ajout (ik, jL, delta/AireK(ik)*TauKL(iseg)*&
+                  &diffprime(Tab_U(:,jL),entity,Tab_entity(k))*AireK(jL)/(AireK(ik)+AireK(jL))*Tab_U(k_enty,ik),A(k))
+                  CALL Ajout (ik, jL, -delta/AireK(ik)*TauKL(iseg)*&
+                  &diffprime(Tab_U(:,jL),entity,Tab_entity(k))*AireK(jL)/(AireK(ik)+AireK(jL))*Tab_U(k_enty,jL),A(k))
+               end if
+            end do
+            CALL Ajout (ik, jL, -delta/AireK(ik)*TauKL(iseg)*diffusion(Tab_U(:,ik),entity)&
+            &*AireK(ik)/(AireK(ik)+AireK(jL)), A(k_enty) )
+            CALL Ajout (ik, jL, -delta/AireK(ik)*TauKL(iseg)*diffusion(Tab_U(:,jL),entity)&
+            &*AireK(jL)/(AireK(ik)+AireK(jL)), A(k_enty) )
 
-        A%Bg(ik) = A%Bg(ik) + delta/AireK(ik)*TauKL(iseg)*(diffusion(U(ik),E(ik),entity)-diffusion(U(jL),E(jL),entity))
+            A(k_enty)%Bg(ik) = A(k_enty)%Bg(ik) + delta/AireK(ik)*TauKL(iseg)/(AireK(ik)+AireK(jL))*(AireK(ik)*&
+            &diffusion(Tab_U(:,ik),entity)+AireK(jL)*diffusion(Tab_U(:,jL),entity))*(Tab_U(k_enty,ik)-Tab_U(k_enty,jL))
 
-        !! contribution dans la ligne jL
+            !! contribution dans la ligne jL
 
-        CALL Ajout (jL, jL, delta/AireK(jL)*TauKL(iseg)*diffprime(U(jL),E(jL),entity), A )
-        CALL Ajout (jL, ik, -delta/AireK(jL)*TauKL(iseg)*diffprime(U(ik),E(ik),entity), A )
+            do k=1,n_enty
+               if (Tab_equa(k)==equa) then
+               CALL Ajout (jL, jL, delta/AireK(jL)*TauKL(iseg)*&
+               &diffprime(Tab_U(:,jL),entity,Tab_entity(k))*AireK(jL)/(AireK(ik)+AireK(jL))*Tab_U(k_enty,jL), A(k) )
+               CALL Ajout (jL, jL, -delta/AireK(jL)*TauKL(iseg)*&
+               &diffprime(Tab_U(:,jL),entity,Tab_entity(k))*AireK(jL)/(AireK(ik)+AireK(jL))*Tab_U(k_enty,ik), A(k) )
+               CALL Ajout (jL, jL, delta/AireK(jL)*TauKL(iseg)*diffprime(Tab_U(:,jL),entity,Tab_entity(k))*&
+               &AireK(jL)/(AireK(ik)+AireK(jL)), A(k) )
+               end if
+            end do
+            CALL Ajout (jL, jL, delta/AireK(jL)*TauKL(iseg)*diffusion(Tab_U(:,ik),entity)*AireK(ik)/&
+            &(AireK(ik)+AireK(jL)), A(k_enty) )
 
-        A%Bg(jL) = A%Bg(jL) + delta/AireK(jL)*TauKL(iseg)*(diffusion(U(jL),E(jL),entity)-diffusion(U(ik),E(ik),entity))
+            do k=1,n_enty
+               if (Tab_equa(k)==equa) then
+               CALL Ajout (jL, ik, delta/AireK(jL)*TauKL(iseg)*&
+               &diffprime(Tab_U(:,ik),entity,Tab_entity(k))*AireK(ik)/(AireK(ik)+AireK(jL))*Tab_U(k_enty,jL), A(k) )
+               CALL Ajout (jL, ik, -delta/AireK(jL)*TauKL(iseg)*&
+               &diffprime(Tab_U(:,ik),entity,Tab_entity(k))*AireK(ik)/(AireK(ik)+AireK(jL))*Tab_U(k_enty,ik), A(k) )
+               end if
+            end do
+            CALL Ajout (jL, ik, -delta/AireK(jL)*TauKL(iseg)*diffusion(Tab_U(:,jL),entity)*AireK(jL)/&
+            &(AireK(ik)+AireK(jL)), A(k_enty) )
+            CALL Ajout (jL, ik, -delta/AireK(jL)*TauKL(iseg)*diffusion(Tab_U(:,ik),entity)*AireK(ik)/&
+            &(AireK(ik)+AireK(jL)), A(k_enty) )
+
+            A(k_enty)%Bg(jL) = A(k_enty)%Bg(jL) + delta/AireK(jL)*TauKL(iseg)/(AireK(ik)+AireK(jL))&
+            &*(AireK(jL)*diffusion(Tab_U(:,jL),entity)+AireK(ik)*diffusion(Tab_U(:,ik),entity))*(Tab_U(k_enty,jL)-Tab_U(k_enty,ik))
+      else 
+         call ASSEMBLEVF4(A(k_enty))
+!         do k=1,n_enty
+!            if (Tab_equa(k)==equa) then
+!            CALL Ajout (ik, ik, TauKL(iseg)*diffprime(Tab_U(:,ik),entity,Tab_entity(k))*AireK(ik)/(AireK(ik)+AireK(jL))&
+!            &*Tab_U(k_enty,ik),  A(k) )
+!            CALL Ajout (ik, ik, -TauKL(iseg)*diffprime(Tab_U(:,ik),entity,Tab_entity(k))*AireK(ik)/(AireK(ik)+AireK(jL))&
+!            &*Tab_U(k_enty,jL),  A(k) )
+!            CALL Ajout (ik, ik, TauKL(iseg)*diffprime(Tab_U(:,ik),entity,Tab_entity(k))*AireK(ik)/(AireK(ik)+AireK(jL)),A(k))
+!            end if
+!         end do
+!         CALL Ajout (ik, ik, TauKL(iseg)*diffusion(Tab_U(:,jL),entity)*AireK(jL)/(AireK(ik)+AireK(jL)),  A(k_enty) )
+
+!         do k=1,n_enty
+!            if (Tab_equa(k)==equa) then
+!          CALL Ajout (ik, jL, TauKL(iseg)*diffprime(Tab_U(:,jL),entity,Tab_entity(k))*AireK(jL)/(AireK(ik)+AireK(jL))*&
+!          &Tab_U(k_enty,ik), A(k) )
+!          CALL Ajout (ik, jL, -TauKL(iseg)*diffprime(Tab_U(:,jL),entity,Tab_entity(k))*AireK(jL)/(AireK(ik)+AireK(jL))*&
+!          &Tab_U(k_enty,jL), A(k) )
+!            end if
+!         end do
+!         CALL Ajout (ik, jL, -TauKL(iseg)*diffusion(Tab_U(:,ik),entity)*AireK(ik)/(AireK(ik)+AireK(jL)), A(k_enty) )
+!         CALL Ajout (ik, jL, -TauKL(iseg)*diffusion(Tab_U(:,jL),entity)*AireK(jL)/(AireK(ik)+AireK(jL)), A(k_enty) )
+
+!         A(k_enty)%Bg(ik) = A(k_enty)%Bg(ik) + TauKL(iseg)/(AireK(ik)+AireK(jL))*(AireK(ik)*diffusion(Tab_U(:,ik),entity)&
+!         &+AireK(jL)*diffusion(Tab_U(:,jL),entity))*(Tab_U(k_enty,ik)-Tab_U(k_enty,jL))
+
+         !! contribution dans la ligne jL
+
+!         do k=1,n_enty
+!            if (Tab_equa(k)==equa) then
+!            CALL Ajout (jL, jL, TauKL(iseg)*diffprime(Tab_U(:,jL),entity,Tab_entity(k))*AireK(jL)/(AireK(ik)+AireK(jL))&
+!            &*Tab_U(k_enty,jL), A(k) )
+!            CALL Ajout (jL, jL, -TauKL(iseg)*diffprime(Tab_U(:,jL),entity,Tab_entity(k))*AireK(jL)/(AireK(ik)+AireK(jL))&
+!            &*Tab_U(k_enty,ik), A(k) )
+!            CALL Ajout (jL, jL, TauKL(iseg)*diffprime(Tab_U(:,jL),entity,Tab_entity(k))*AireK(jL)/(AireK(ik)+AireK(jL)), A(k) )
+!            end if
+!         end do
+!         CALL Ajout (jL, jL, TauKL(iseg)*diffusion(Tab_U(:,ik),entity)*AireK(ik)/(AireK(ik)+AireK(jL)), A(k_enty) )
+
+!         do k=1,n_enty
+!            if (Tab_equa(k)==equa) then
+!            CALL Ajout (jL, ik, TauKL(iseg)*diffprime(Tab_U(:,ik),entity,Tab_entity(k))*AireK(ik)/(AireK(ik)+AireK(jL))&
+!            &*Tab_U(k_enty,jL), A(k) )
+!            CALL Ajout (jL, ik, -TauKL(iseg)*diffprime(Tab_U(:,ik),entity,Tab_entity(k))*AireK(ik)/(AireK(ik)+AireK(jL))&
+!            &*Tab_U(k_enty,ik), A(k) )
+!            end if
+!         end do
+!         CALL Ajout (jL, ik, -TauKL(iseg)*diffusion(Tab_U(:,jL),entity)*AireK(jL)/(AireK(ik)+AireK(jL)), A(k_enty) )
+!         CALL Ajout (jL, ik, -TauKL(iseg)*diffusion(Tab_U(:,ik),entity)*AireK(ik)/(AireK(ik)+AireK(jL)), A(k_enty) )
+
+!         A(k_enty)%Bg(jL) = A(k_enty)%Bg(jL) + TauKL(iseg)/(AireK(ik)+AireK(jL))*(AireK(jL)*diffusion(Tab_U(:,jL),entity)+&
+!         &AireK(ik)*diffusion(Tab_U(:,ik),entity))*(Tab_U(k_enty,jL)-Tab_U(k_enty,ik))
+      end if
 
      case(dirichlet)
         stop 'Pas de condition de Dirichlet prevue'
@@ -67,7 +171,6 @@ subroutine assemblediffusionKS (A,U,E,entity)
   !------------
   ! Impressions
   !------------
-  NcoefMat = size(A%Tmat)
   !!WRITE(*,*) ( A%Tmat(is) , is=1, NcoefMat )
 
   !-----------------

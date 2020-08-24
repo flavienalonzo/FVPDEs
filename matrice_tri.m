@@ -24,9 +24,9 @@ function [A,b] = matrice_tri(Tri,f,g,h,equation)
                if isnan(TN(i,j))
                    if Typesegment(1,3*(i-1)+j)==0
 
-                   elseif Typesegment(1,3*(i-1)+j)==1
-                       b(i,1) = b(i,1) + Coef_trans(i,j)*g(0.5*(Points(Eall(3*(i-1)+j,1),:)+Points(Eall(3*(i-1)+j,2),:)));
                    elseif Typesegment(1,3*(i-1)+j)==2
+                       b(i,1) = b(i,1) + Coef_trans(i,j)*g(0.5*(Points(Eall(3*(i-1)+j,1),:)+Points(Eall(3*(i-1)+j,2),:)));
+                   elseif Typesegment(1,3*(i-1)+j)==1
                        A(i,i) = A(i,i) - Coef_trans(i,j);
                        b(i,1) = b(i,1) + Long_segment(1,3*(i-1)+j)*h(0.5*(Points(Eall(3*(i-1)+j,1),:)+Points(Eall(3*(i-1)+j,2),:)));%'*([0 -1;1 0]*(Points(Eall(3*(i-1)+j,2),:)-Points(Eall(3*(i-1)+j,1),:))')/norm(Points(Eall(3*(i-1)+j,2),:)-Points(Eall(3*(i-1)+j,1),:),2);
                    end
@@ -35,9 +35,9 @@ function [A,b] = matrice_tri(Tri,f,g,h,equation)
                    A(i,TN(i,j)) = -Coef_trans(i,j);
                    if Typesegment(1,3*(i-1)+j)==0
 
-                   elseif Typesegment(1,3*(i-1)+j)==1
-                       b(i,1) = b(i,1) + Coef_trans(i,j)*g(0.5*(Points(Eall(3*(i-1)+j,1),:)+Points(Eall(3*(i-1)+j,2),:)));
                    elseif Typesegment(1,3*(i-1)+j)==2
+                       b(i,1) = b(i,1) + Coef_trans(i,j)*g(0.5*(Points(Eall(3*(i-1)+j,1),:)+Points(Eall(3*(i-1)+j,2),:)));
+                   elseif Typesegment(1,3*(i-1)+j)==1
                        A(i,i) = A(i,i) - Coef_trans(i,j) ;
                        b(i,1) = b(i,1) + Long_segment(1,3*(i-1)+j)*h(0.5*(Points(Eall(3*(i-1)+j,1),:)+Points(Eall(3*(i-1)+j,2),:)));
                    end

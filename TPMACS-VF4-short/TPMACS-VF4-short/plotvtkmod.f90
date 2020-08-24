@@ -17,7 +17,7 @@ contains
     real(kind=long), dimension(:),allocatable :: WW
     Integer, dimension(:,:),allocatable :: NuSoDiam
 
-    print*,"Creation du fichier d'impression"
+    !print*,"Creation du fichier d'impression"
     uplotvtk = 63
     FPLOTVTK = chaine//'.vtk'
 
@@ -58,8 +58,8 @@ contains
     close(uplotvtk)
 
 
-    print*,"OK"
-    print*," "
+    !print*,"OK"
+    !print*," "
 
 400 format (E10.5)
 500 format (E30.20)

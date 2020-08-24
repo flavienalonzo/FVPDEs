@@ -1,4 +1,4 @@
-SUBROUTINE assemblereactionKS( A, U , E,entity)
+SUBROUTINE assemblereactionKS( A, Tab_U,entity,Tab_entity,Tab_equa,equa,k_enty)
     !--------
     ! Modules
     !--------
@@ -12,13 +12,15 @@ SUBROUTINE assemblereactionKS( A, U , E,entity)
     !--------------------------
     ! Declaration des arguments
     !--------------------------
-    TYPE(MatCreux)       :: A
-    real (kind = long), dimension(Nbt) :: U , E 
+    TYPE(MatCreux) , dimension(n_enty)      :: A
+    real (kind = long), dimension(n_enty,Nbt) :: Tab_U
+    character(len=6), dimension(n_enty) :: Tab_entity, Tab_equa
+    character(len=6), intent(in) :: equa
     !----------------------------------
     ! Declaration des variables locales
     !----------------------------------
     CHARACTER(len=6)      :: oldprf,entity
-    INTEGER               :: i, j, k,  jt 
+    INTEGER               :: i, j, k,  jt , k_enty
     REAL(kind=long), DIMENSION(3)     :: x, y
   
   
@@ -31,18 +33,26 @@ SUBROUTINE assemblereactionKS( A, U , E,entity)
     !------
     ! Corps
     !------
-  Do jt = 1, Nbt 
-    CALL Ajout (jt, jt, - delta*reactionprime(U(jt),E(jt),entity), A )
-    A%Bg(jt) = A%Bg(jt) - delta*reaction(U(jt),E(jt),entity)
-  END Do
-    !------------
-    ! Impressions
-    !------------
-  !!$  IF (iprint >= 2) THEN
-  !!$     CALL prvari(uprint, ' Numero triangle = ', jt) 
-  !!$     WRITE (uprint,*) ( (matloc(iloc,jloc), jloc=1,3),iloc=1,3)
-  !!$  END IF
-  
+    if (equa=='instat') then 
+      Do jt = 1, Nbt 
+        do k=1,n_enty
+          if (Tab_equa(k)==equa) then
+          CALL Ajout (jt, jt, - delta*reactionprime(Tab_U(:,jt),entity,Tab_entity(k)), A(k) )
+          end if 
+        end do
+        A(k_enty)%Bg(jt) = A(k_enty)%Bg(jt) - delta*reaction(Tab_U(:,jt),entity)
+      END Do
+    else 
+      Do jt = 1, Nbt 
+        do k=1,n_enty
+          if (Tab_equa(k)==equa) then
+          CALL Ajout (jt, jt, - AireK(jt)*reactionprime(Tab_U(:,jt),entity,Tab_entity(k)), A(k) )
+          end if
+        end do
+        A(k_enty)%Bg(jt) = A(k_enty)%Bg(jt) - AireK(jt)*reaction(Tab_U(:,jt),entity)
+      END Do
+    end if
+   
     !-----------------
     ! Fin du programme
     !-----------------

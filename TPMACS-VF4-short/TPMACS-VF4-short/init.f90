@@ -50,7 +50,7 @@ SUBROUTINE  INIT
 
   ! il y a six maillages dispo 'MAILLAGEGEOx', x=1,...,6
   
-   nom_mesh =  'MAILLAGEGEO4'   
+   nom_mesh =  'MAILLAGEGEO'   
    !nom_mesh = 'Tri_2D_0.05_5_1_2_@(x)[-x(2),x(1)].txt' 
 
   !--------------------------------------------------------------------
@@ -58,20 +58,41 @@ SUBROUTINE  INIT
    iprint = 6  ! niveau d'impression
 
 
-   n_enty = 3
+   n_enty = 2
+   index_norm=1;index_nut=2;index_endo=3;index_vegf=4;
    !Pour le nutriment :
-   Coef_diffusion = 0.0001D0
-   theta = 0.05D0
-   Coef_prod = 0.05D0
+    Coef_diffusion = 1.D-3
+    theta = 1.D-1
+    Coef_prod = 5.D0
+    seuil_hypo = 1.D-1
+    seuil_necro = 1.D-2
+    satur_nutri = 1.D1
 
    !Pour les cellules tumorales :
-    Diff_u = 0.05D0
-   chi = 0.005D0
-   rate = 0.1D0 
-    Coef_cons = 0.05D0
+    Diff_u = 1.D-4
+   chi = 1.D-2
+   rate = 6.D-2 
+   apop = 1.D-2
+   rat_pop = rate - apop
+    Coef_cons = 5.D-1
+    satur_norm = 0.0D0
 
-   delta = 0.001
-   Tf = 30.1
+  !Pour les cellules endotheliales
+    Diff_endo = 1.D-5
+    chemo_endo = 1.D-1
+    satur_endo = 4.D-1
+    rate_endo = 0.D0
+
+    !Pour le VEGF
+  VEGF_prod = Coef_prod
+  VEGF_dif = Coef_diffusion
+  VEGF_cons = Coef_cons
+  VEGF_degr = theta
+
+
+  WhichPb = 29
+  delta = 1.D-5
+  Tf = 20.1
 
   
   !--------------------------------------------

@@ -1,4 +1,4 @@
-subroutine MethNewtonMul(Tab_A,Tab_U,Tab_U_p,Tab_entity,tol)
+subroutine MethNewtonMul(Tab_A,Tab_U,Tab_U_p,Tab_entity,A_big,Tab_equa,Tab_chemo,equa,tol,tps)
     USE longr
     USE parmmage
     USE imprime
@@ -9,75 +9,77 @@ subroutine MethNewtonMul(Tab_A,Tab_U,Tab_U_p,Tab_entity,tol)
     use fsourcemod
 
     implicit none
-    type(MatCreux), dimension(n_enty), intent(inout) :: Tab_A
+    type(MatCreux), dimension(n_enty,n_enty), intent(inout) :: Tab_A
     real(kind=long), dimension(n_enty,Nbt), intent(inout) :: Tab_U, Tab_U_p
-    character(len=6), dimension(n_enty), intent(in) :: Tab_entity
-    real(kind=long), intent(in) :: tol
+    character(len=6), dimension(n_enty), intent(in) :: Tab_entity, Tab_equa
+    character(len=6), intent(in) :: equa
+    type(MatCreux), intent(in) :: A_big
+    real(kind=long), intent(in) :: tol,tps
+    integer, dimension(n_enty), intent(in) :: Tab_chemo
 
-    real(kind=long), dimension(Nbt) :: dU,I0
+    real(kind=long), dimension(n_enty*Nbt) :: B,dU,I0
     real(kind=long), dimension(n_enty) :: seuil
-    integer :: i, k , index_endo, index_nut, index_norm
+    integer :: i, k, h, n, n_max
 
+    n_max = 15
     Tab_U = Tab_U_p
     I0 = 1.D0
-    index_endo=0
-    index_norm=0
-    index_nut=0
     do k=1,n_enty
-        select case(Tab_entity(k))
-        case('Endoth')
-            index_endo = k
-        case('Nutrim')
-            index_nut = k
-        case('u_norm')
-            index_norm = k
-        end select
-    end do
-    do k=1,n_enty
-        if (k==index_nut) then 
-            call actuNutri(Tab_A(k),Tab_U(index_nut,:),Tab_U(k,:),Tab_U(index_endo,:))
-            seuil(k) = 0
-        else
-            call vide(Tab_A(k))
-            Tab_A(k)%F = 0.D0 
-            Tab_A(k)%Bg = Tab_U(k,:)-Tab_U_p(k,:)
-            call assemblediffusionKS(Tab_A(k),Tab_U(k,:),Tab_U(index_endo,:),Tab_entity(k)) 
-            call assemblechemoKS(Tab_A(k),Tab_U(k,:),Tab_U(index_nut,:),Tab_U(index_endo,:),Tab_entity(k))
-            call assemblereactionKS(Tab_A(k),Tab_U(k,:),Tab_U(index_endo,:),Tab_entity(k))
-            do i=1,Nbt
-                call AJOUT(i,i,1.D0,Tab_A(k))
-            end do 
-            dU = bigradient(Tab_A(k),-Tab_A(k)%Bg,I0,tol) 
-            Tab_U(k,:) = Tab_U(k,:) + dU 
-            seuil(k) = sqrt(dot_product(dU,dU))
-        end if
-    end do
-    do while(maxval(seuil)>tol)
-        do k=1,n_enty
-            if (k==index_nut) then
-                call actuNutri(Tab_A(k),Tab_U(index_nut,:),Tab_U(k,:),Tab_U(index_endo,:))
-                seuil(k) = 0
-            else
-                call vide(Tab_A(k))
-                Tab_A(k)%F = 0.D0 
-                Tab_A(k)%Bg = Tab_U(k,:)-Tab_U_p(k,:)
-                call assemblediffusionKS(Tab_A(k),Tab_U(k,:),Tab_U(index_endo,:),Tab_entity(k)) 
-                call assemblechemoKS(Tab_A(k),Tab_U(k,:),Tab_U(index_nut,:),Tab_U(index_endo,:),Tab_entity(k))
-                call assemblereactionKS(Tab_A(k),Tab_U(k,:),Tab_U(index_endo,:),Tab_entity(k))
-                do i=1,Nbt
-                    call AJOUT(i,i,1.D0,Tab_A(k))
-                end do 
-                dU = bigradient(Tab_A(k),-Tab_A(k)%Bg,I0,tol) 
-                Tab_U(k,:) = Tab_U(k,:) + dU 
-                seuil(k) = sqrt(dot_product(dU,dU))
-            end if
+        do h=1,n_enty
+            call vide(Tab_A(k,h))
         end do
+        if (Tab_equa(k)=='instat') then 
+            Tab_A(k,k)%Bg = Tab_U(k,:)-Tab_U_p(k,:)
+            do i=1,Nbt
+                call AJOUT(i,i,1.D0,Tab_A(k,k))
+            end do 
+        end if
+        call assemblediffusionKS(Tab_A(k,:),Tab_U,Tab_entity(k),Tab_entity,Tab_equa,Tab_equa(k),k) 
+        if (Tab_chemo(k)/=0) then
+            call assemblechemoKS(Tab_A(k,:),Tab_U,Tab_entity(k),Tab_entity,Tab_equa,Tab_equa(k),k,Tab_chemo(k))
+        end if
+        call assemblereactionKS(Tab_A(k,:),Tab_U,Tab_entity(k),Tab_entity,Tab_equa,Tab_equa(k),k)
+    end do
+    !call actubigmatrix(Tab_A,A_big)
+    !du = bigradient(A_big,-A_big%Bg,I0,tol)
+    do k=1,n_enty
+        B(1+(k-1)*Nbt:k*Nbt) = -Tab_A(k,k)%Bg  
+    end do
+        dU = BiCGSTAB(Tab_A,B,tol)!BGbloc(Tab_A,B,Tab_U,tol,tps)
+    do k=1,n_enty
+        Tab_U(k,:) = Tab_U(k,:) + dU(1+(k-1)*Nbt:k*Nbt) 
+        seuil(k) = sqrt(dot_product(dU,dU))
+    end do
+    n=1
+    do while(maxval(seuil)>tol.and.n<=n_max)
+        do k=1,n_enty
+            do h=1,n_enty
+                call vide(Tab_A(k,h))
+            end do
+                if (Tab_equa(k)=='instat') then
+                    Tab_A(k,k)%Bg = Tab_U(k,:)-Tab_U_p(k,:)
+                    do i=1,Nbt
+                        call AJOUT(i,i,1.D0,Tab_A(k,k))
+                    end do 
+                end if
+                call assemblediffusionKS(Tab_A(k,:),Tab_U,Tab_entity(k),Tab_entity,Tab_equa,Tab_equa(k),k) 
+                if (Tab_chemo(k)/=0) then
+                    call assemblechemoKS(Tab_A(k,:),Tab_U,Tab_entity(k),Tab_entity,Tab_equa,Tab_equa(k),k,Tab_chemo(k))
+                end if
+                call assemblereactionKS(Tab_A(k,:),Tab_U,Tab_entity(k),Tab_entity,Tab_equa,Tab_equa(k),k)
+        end do
+        !call actubigmatrix(Tab_A,A_big)
+        !dU = bigradient(A_big,-A_big%Bg,I0,tol)
+        do k=1,n_enty
+            B(1+(k-1)*Nbt:k*Nbt) = -Tab_A(k,k)%Bg  
+        end do
+        du = BiCGSTAB(Tab_A,B,tol)!BGbloc(Tab_A,B,Tab_U,tol,tps)
+        do k=1,n_enty
+            Tab_U(k,:) = Tab_U(k,:) + dU(1+(k-1)*Nbt:k*Nbt) 
+            seuil(k) = sqrt(dot_product(dU(1+(k-1)*Nbt:k*Nbt) ,dU(1+(k-1)*Nbt:k*Nbt) ))
+        end do
+        n=n+1
+        !print*,n,maxval(seuil)
     end do
     
-
-
-
-
-
-
 end subroutine MethNewtonMul

@@ -1,8 +1,15 @@
 mv -f objets/*.o .
 mv -f objets/*.mod .
 make
+
+errorMake=$?
+
 mv -f *.o objets
 mv -f *.mod objets
 
-ln -f mainvf4 Lestests/
+if [ $errorMake -ne 0 ]; then
+    echo "Une erreur est survenue durant le make"
+    exit 1;
+fi
 
+ln -f mainvf4 Lestests/

@@ -1,4 +1,4 @@
-h=0.01;lambda=5;uniform=1;condition=2;
+h=0.05;lambda=5;uniform=1;condition=2;
 V = @(x) [-x(2),x(1)];
 %% 
 Tri = CreateTriMesh2D(h,lambda,uniform,condition,V);
@@ -13,7 +13,7 @@ disp('5) \partial_{t}u(t,x) -D\nabla^{2}u(t,x) + \beta u(t,x) = f(x)');
 
 %% 
 load(['Tri_2D_',num2str(h),'_',num2str(lambda),'_',num2str(uniform),'_',num2str(condition),'_',func2str(V),'.mat']);
-equation=7;
+equation=1;
 
 %% 
 Points = Tri{1};
@@ -27,28 +27,37 @@ Coef_trans = Tri{8};
 Volume = Tri{9};
 Long_segment = Tri{10};
 
+%% 
+for i=1:size(TN,1)
+    for j=1:size(TN,2)
+        if isnan(TN(i,j))
+            TN(i,j) = 0;
+        end
+    end
+end
 %% Enregistrer le fichier.mat en .txt
+
 fileID = fopen(['Tri_2D_',num2str(h),'_',num2str(lambda),'_',num2str(uniform),'_',num2str(condition),'_',func2str(V),'.txt'],'w');
 fprintf(fileID,'%7i %7i\n',size(Points));
-fprintf(fileID,'%3.14f %3.14f\n',Points);
+fprintf(fileID,'%3.14f %3.14f\n',Points');
 fprintf(fileID,'%7i %7i\n',size(ConnectivityList));
-fprintf(fileID,'%7i %7i %7i\n',ConnectivityList);
+fprintf(fileID,'%7i %7i %7i\n',ConnectivityList');
 fprintf(fileID,'%7i %7i\n',size(Eall));
-fprintf(fileID,'%7i %7i\n',Eall);
+fprintf(fileID,'%7i %7i\n',Eall');
 fprintf(fileID,'%7i %7i\n',size(Typesegment'));
-fprintf(fileID,'%7i\n',Typesegment');
+fprintf(fileID,'%7i\n',Typesegment);
 fprintf(fileID,'%7i %7i\n',size(TN));
-fprintf(fileID,'%7i %7i %7i\n',TN);
+fprintf(fileID,'%7i %7i %7i\n',TN');
 fprintf(fileID,'%7i %7i\n',size(Centre_tri'));
-fprintf(fileID,'%3.14f %3.14f\n',Centre_tri');
+fprintf(fileID,'%3.14f %3.14f\n',Centre_tri);
 fprintf(fileID,'%7i %7i\n',size(Dist_tri));
-fprintf(fileID,'%3.14f %3.14f\n',Dist_tri);
+fprintf(fileID,'%3.14f %3.14f %3.14f\n',Dist_tri');
 fprintf(fileID,'%7i %7i\n',size(Coef_trans));
-fprintf(fileID,'%3.14f %3.14f %3.14f\n',Coef_trans);
+fprintf(fileID,'%3.14f %3.14f %3.14f\n',Coef_trans');
 fprintf(fileID,'%7i %7i\n',size(Volume'));
-fprintf(fileID,'%3.14f\n',Volume');
+fprintf(fileID,'%3.14f\n',Volume);
 fprintf(fileID,'%7i %7i\n',size(Long_segment'));
-fprintf(fileID,'%3.14f\n',Long_segment');
+fprintf(fileID,'%3.14f\n',Long_segment);
 fclose(fileID);
 %% 
 u0 = zeros(size(Centre_tri,2),1);
