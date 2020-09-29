@@ -6,7 +6,7 @@
 !     * Ce sous programme assemble la contribution de diffusion
 !     * Assemblage  par segement l'operateur 
 !      - d (d^2u/dx^2 + d^2/dy^2)
-! en utilisant la méthode des volumes finis VF4
+! en utilisant la mï¿½thode des volumes finis VF4
 !     *----------------------------
 !     * Fonctionnement du programme
 !     *----------------------------
@@ -46,13 +46,13 @@ SUBROUTINE ASSEMBLEVF4( A )
   ! Corps
   !------
 
-  !  Segment intéreurs
+  !  Segment intï¿½reurs
   DO iseg = 1, Nseg
      ii = (NtypSeg(iseg)) 
 
      Select case (ii) 
 
-     case (0)   !! segment à l'nterieur  
+     case (0)   !! segment ï¿½ l'nterieur  
         is = NuSeg(1,iseg); js=NuSeg(2,iseg)
         ik= NumTVoisSeg(1,iseg); jL =NumTVoisSeg(2,iseg)
 
@@ -77,12 +77,12 @@ SUBROUTINE ASSEMBLEVF4( A )
         CALL Ajout (ik, ik, Coef_diffusion*TauKL(iseg),  A )
 
         !
-        ! valeur de la donnée de la solution sur le bord  au point x1, y1
+        ! valeur de la donnï¿½e de la solution sur le bord  au point x1, y1
         !
         x1= (CoordS(1,is)+CoordS(1,js))/2.D0 ; y1= (CoordS(2,is)+CoordS(2,js))/2.D0
         !
         ! Ajout des conditions aux limlites 
-        A%Bg (ik) = A%Bg(ik) + Coef_diffusion*TauKL(iseg)*gbord(x1,y1,choixpb)
+        A%Bg (ik) = A%Bg(ik) + Coef_diffusion*TauKL(iseg)*gbord2(x1,y1,choixpb)
         !
      case(neumann)
         ! conditions aux limites homogenes le flux est nul

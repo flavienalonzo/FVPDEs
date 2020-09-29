@@ -6,7 +6,7 @@
 !     * Ce sous programme assemble la contribution de diffusion
 !     * Assemblage  par segement l'operateur 
 !      - d (d^2u/dx^2 + d^2/dy^2)
-! en utilisant la méthode des volumes finis VF4
+! en utilisant la mï¿½thode des volumes finis VF4
 !     *----------------------------
 !     * Fonctionnement du programme
 !     *----------------------------
@@ -44,17 +44,17 @@ SUBROUTINE ASSEMBLEVITESSE( A )
   !------
   ! Corps
   !------
-  !  Segment intéreurs
+  !  Segment intï¿½reurs
   DO iseg = 1, Nseg
      ii = (NtypSeg(iseg)) 
 
      Select case (ii) 
 
-     case (0)   !! segment à l'nterieur  
+     case (0)   !! segment ï¿½ l'nterieur  
         is = NuSeg(1,iseg); js=NuSeg(2,iseg)
         ik= NumTVoisSeg(1,iseg); jL =NumTVoisSeg(2,iseg)
 
-        !! calcul de la normale extérieure n = x(Jl)-x(ik)
+        !! calcul de la normale extï¿½rieure n = x(Jl)-x(ik)
         nx= CoordK(1, jL)- CoordK(1, ik); ny= CoordK(2, jL)- CoordK(2, ik);
         nnorm= sqrt(nx*nx+ny*ny); nx=nx/nnorm; ny =ny/nnorm
 
@@ -83,7 +83,7 @@ SUBROUTINE ASSEMBLEVITESSE( A )
         ik= NumTVoisSeg(1,iseg) 
 
         !
-        ! valeur de la donnée de la solution sur le bord  au point x1, y1
+        ! valeur de la donnï¿½e de la solution sur le bord  au point x1, y1
         !
         x1= (CoordS(1,is)+CoordS(1,js))/2.D0 ; y1= (CoordS(2,is)+CoordS(2,js))/2.D0
         !
@@ -92,7 +92,7 @@ SUBROUTINE ASSEMBLEVITESSE( A )
 
          
         
-        !! calcul de la normale extérieure n = x(Jl)-x(ik)
+        !! calcul de la normale extï¿½rieure n = x(Jl)-x(ik)
         nx= x1- CoordK(1, ik); ny= y1- CoordK(2, ik);
         nnorm= sqrt(nx*nx+ny*ny); nx=nx/nnorm; ny =ny/nnorm
 
@@ -105,7 +105,7 @@ SUBROUTINE ASSEMBLEVITESSE( A )
            CALL Ajout (ik, ik, inner,  A )
         else
            ! Ajout des conditions aux limlites 
-           A%Bg (ik) = A%Bg(ik) - inner*gbord(x1,y1,choixpb)
+           A%Bg (ik) = A%Bg(ik) - inner*gbord2(x1,y1,choixpb)
            !
         end if
      case(neumann)

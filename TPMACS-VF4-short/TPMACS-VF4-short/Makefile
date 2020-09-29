@@ -40,6 +40,19 @@ OBJS	      = longr.o\
 		assembleTumor.o \
 		assemInstaNutri.o \
 		assemInstaTumor.o \
+		plotvtkmodscheme.o \
+		matrixinitP1Sommets.o \
+		tenseur.o \
+		kscalaire.o \
+		fsourcebreast.o \
+		NewtonTumP1sommets.o \
+		NewtonNutP1sommets.o \
+		NewtonEndP1sommets.o \
+		NewtonVegP1sommets.o \
+		amatloc.o \
+		ubord.o \
+		changevertices.o \
+		Newtonconditioninitiale.o \
 		KellerSegel.o 
 
 $(PROG): $(OBJS)

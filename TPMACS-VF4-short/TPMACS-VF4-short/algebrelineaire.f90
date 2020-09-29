@@ -26,7 +26,7 @@ CONTAINS
     !----------------------------------
     CHARACTER(len=6)      :: oldprf
     REAL(kind=long),  DIMENSION( SIZE(A%IndPL) -1 ) ::  R, P, Q, X
-    REAL(kind=long)                       :: alpha, beta, seuil, seuil9,tol
+    REAL(kind=long)                       :: alphaal, betaal, seuilal, seuil9,tol
     INTEGER                                :: ngrad
     !-------------------
     ! Debut du programme
@@ -43,27 +43,27 @@ CONTAINS
     R = b - A*X
     P = R
 
-    seuil = DOT_PRODUCT(R, R)
+    seuilal = DOT_PRODUCT(R, R)
     DO
-       WRITE(*,*)'GRAD  NITER = ',ngrad,' SEUIL = ', SQRT(seuil) 
+       WRITE(*,*)'GRAD  NITER = ',ngrad,' SEUIL = ', SQRT(seuilal) 
        ngrad = ngrad + 1                       ! nombre d'iteration
        Q =  A* P 
 
-       IF (SQRT(seuil) <= tol) EXIT
+       IF (SQRT(seuilal) <= tol) EXIT
 
-       alpha = seuil/DOT_PRODUCT(Q,P)
-       X = X + alpha * P
-       R = R - alpha * Q
+       alphaal = seuilal/DOT_PRODUCT(Q,P)
+       X = X + alphaal * P
+       R = R - alphaal * Q
        seuil9 = DOT_PRODUCT(R,R)
-       beta = seuil9/seuil
-       seuil = seuil9 
-       P = R + beta * P
+       betaal = seuil9/seuilal
+       seuilal = seuil9 
+       P = R + betaal * P
 
     END DO
 
     gradconj = X
 
-    WRITE(*,*)'GRAD  NITER = ',ngrad,' SEUIL = ', SQRT(seuil) 
+    WRITE(*,*)'GRAD  NITER = ',ngrad,' SEUIL = ', SQRT(seuilal) 
     !------------
     ! Impressions
     !------------

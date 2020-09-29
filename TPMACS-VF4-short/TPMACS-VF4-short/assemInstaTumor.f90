@@ -39,10 +39,10 @@ subroutine assemInstaTumor(Tum,E,U,Nut)
         cplusj = 0.5*(Nut(ik)-Nut(jL) + abs(Nut(ik) - Nut(jL)))
         cmoinsj = 0.5*(Nut(ik)-Nut(jL) - abs(Nut(ik) - Nut(jL)))
 
-        Tum(ik) = Tum(ik) - delta/AireK(ik)*TauKL(iseg)*chi*(U(ik)*cplusi&
+        Tum(ik) = Tum(ik) - delta/AireK(ik)*TauKL(iseg)*chi_u*(U(ik)*cplusi&
         &+U(jL)*cmoinsi)/(sqrt(1+satur_nutri*approx))
 
-        Tum(jL) = Tum(jL) - delta/AireK(jL)*TauKL(iseg)*chi*(U(jL)*cplusj&
+        Tum(jL) = Tum(jL) - delta/AireK(jL)*TauKL(iseg)*chi_u*(U(jL)*cplusj&
         &+U(ik)*cmoinsj)/(sqrt(1+satur_nutri*approx))
 
         case default

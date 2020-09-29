@@ -73,9 +73,9 @@ SUBROUTINE   readmesh
   !! lecture des numeros des sommets pour chaque triangle, coord centre K, AireK
 
   READ(umesh, *)
-  ALLOCATE ( NuSoK(1:3,1:Nbt), CoordK(1:2,Nbt), AireK(Nbt) )
+  ALLOCATE ( NuSoK(1:3,1:Nbt), CoordK(1:2,Nbt), AireK(Nbt) , ntypt(nbt))
   DO kt = 1,Nbt
-     READ(umesh,*) n, ( NuSoK(j,kt),j=1,3 ), (CoordK(j,kt),j=1,2), AireK(kt)
+     READ(umesh,*) n, ( NuSoK(j,kt),j=1,3 ), (CoordK(j,kt),j=1,2), AireK(kt), ntypt(kt)
     ! write(*,*) n, ( NuSoK(j,kt),j=1,3 ), (CoordK(j,kt),j=1,2), AireK(kt)
   END DO
 

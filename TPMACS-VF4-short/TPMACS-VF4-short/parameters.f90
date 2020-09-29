@@ -41,11 +41,11 @@ module parameters
             case('Nutrim')
                 y = Coef_diffusion
             case('Endoth')
-                y = 0.
+                y = Diff_endo
             case('u_norm')
-                y = Diff_u*x(index_norm)*(1-x(index_norm))
+                y = Diff_u
             case('VasEGF')
-                y = 0.
+                y = VEGF_dif
         end select
     end function diffusion 
 
@@ -66,8 +66,6 @@ module parameters
             end select
         case('u_norm')
             select case(derivative)
-            case('u_norm')
-                y = Diff_u*(1-2*x(index_norm))
             case default
                 y = 0
             end select
@@ -88,9 +86,17 @@ module parameters
         case('Nutrim')
             y = 0
         case('Endoth')
-            y = 0.
+            if (x(index_endo)>satur_endo) then 
+                y = chemo_endo*x(index_endo)**2*(1-x(index_endo)-x(index_norm))**2
+            else 
+                y = 0
+            end if
         case('u_norm')
-            y = chi*x(index_norm)*(1-x(index_norm))
+            if (x(index_nut)<=seuil_hypo) then
+                y = chi_u*x(index_norm)**2*(1-x(index_endo)-x(index_norm))**2
+            else 
+                y = 0
+            end if
         case('VasEGF')
             y = 0
         end select
@@ -108,13 +114,37 @@ module parameters
             end select
         case('Endoth')
             select case(derivative)
+            case('Endoth')
+                if (x(index_endo)>satur_endo) then 
+                    y = chemo_endo*(4*x(index_endo)**3-6*(1-x(index_norm))*x(index_endo)**2&
+                    & + x(index_endo)**2*(1-x(index_norm))**2)
+                else
+                    y = 0
+                end if
+            case('u_norm')
+                if (x(index_endo)>satur_endo) then 
+                    y = chemo_endo*(-2*x(index_endo)**3+2*x(index_endo)**2*(1-x(index_norm)))
+                else
+                    y = 0
+                end if
             case default
                 y = 0
             end select
         case('u_norm')
             select case(derivative)
             case('u_norm')
-                y = chi*(1-2*x(index_norm))
+                if (x(index_nut)<=seuil_hypo) then
+                    y = chi_u*(4*x(index_norm)**3-6*(1-x(index_endo))*x(index_norm)**2&
+                    & + x(index_norm)**2*(1-x(index_endo))**2)
+                else 
+                    y = 0
+                end if
+            case('Endoth')
+                if (x(index_nut)<=seuil_hypo) then
+                    y = -chi_u*(-2*x(index_norm)**3+2*x(index_norm)**2*(1-x(index_endo)))
+                else 
+                    y = 0
+                end if
             case default
                 y = 0
             end select
@@ -133,19 +163,21 @@ module parameters
         real (kind = long) :: y 
         select case(entity)
         case('Nutrim')
-            y = 0
+            y = rat_pop*x(index_endo)-Coef_cons*x(index_nut)*x(index_norm) - nut_degra*x(index_nut)
         case('Endoth')
-            y = 0
+                y = rate_endo*x(index_endo) - degr_endo*x(index_endo)
         case('u_norm')
             if (x(index_nut)>seuil_hypo) then
-                y = rat_pop*x(index_norm)
-            else if(x(index_nut)<seuil_necro) then
-                y = -x(index_norm)
+                y = rate*x(index_norm) - apop*x(index_norm)
+            else 
+                y = - apop*x(index_norm)
+            end if
+        case('VasEGF')
+            if (x(index_nut)<=seuil_hypo.and.x(index_nut)>seuil_necro) then
+                y = VEGF_prod*x(index_norm) - VEGF_degr*x(index_vegf)-VEGF_cons*x(index_vegf)*x(index_endo)
             else 
                 y = 0
             end if
-        case('VasEGF')
-            y = 0
         end select
     end function reaction 
 
@@ -156,11 +188,19 @@ module parameters
         select case(entity)
         case('Nutrim')
             select case(derivative)
+            case('Nutrim')
+                y = -(nut_degra + Coef_cons*x(index_norm))
+            case('Endoth')
+                y = rat_pop
+            case('u_norm')
+                y = -Coef_cons*x(index_nut)
             case default 
                 y = 0
             end select
         case('Endoth')
             select case(derivative)
+            case('Endoth')
+                    y = rate_endo - degr_endo
             case default
                 y = 0
             end select
@@ -168,11 +208,9 @@ module parameters
             select case(derivative)
             case('u_norm')
                 if (x(index_nut)>seuil_hypo) then
-                    y = rat_pop
-                else if(x(index_nut)<seuil_necro) then
-                    y = -1
+                    y = rate - apop
                 else 
-                    y = 0
+                    y = -apop 
                 end if
             case default 
                 y = 0
@@ -180,6 +218,24 @@ module parameters
             
         case('VasEGF')
             select case(derivative)
+            case('VasEGF')
+                if (x(index_nut)<=seuil_hypo.and.x(index_nut)>seuil_necro) then
+                    y = -(VEGF_degr + VEGF_cons*x(index_endo))
+                else 
+                    y = 0
+                end if
+            case('u_norm')
+                if (x(index_nut)<=seuil_hypo.and.x(index_nut)>seuil_necro) then
+                    y = VEGF_prod
+                else 
+                    y = 0 
+                end if
+            case('Endoth')
+                if (x(index_nut)<=seuil_hypo.and.x(index_nut)>seuil_necro) then
+                    y = -VEGF_cons*x(index_vegf)
+                else 
+                    y = 0 
+                end if
             case default 
                 y = 0
             end select

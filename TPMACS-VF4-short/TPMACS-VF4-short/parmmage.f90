@@ -13,17 +13,18 @@ module parmmage
   use longr
   implicit none
 
-  REAL (kind = long), DIMENSION(:,:), POINTER :: CoordS, CoordK
+  REAL (kind = long), DIMENSION(:,:), POINTER :: CoordS, CoordK, CoordMseg
   INTEGER,            DIMENSION(:,:), POINTER   :: NuSoK
   Integer , DIMENSION(:,:), ALLOCATABLE         :: NuMSeg
   INTEGER,            DIMENSION(:,:), POINTER   :: NuVoisK, NuTrS
   INTEGER,            DIMENSION(:)  , POINTER   :: ntyps,ntypt, ntypseg, NombVoisSeg, NbrTrS
   INTEGER                                       :: Nbs,Nbt,Ns,Nb, Nseg,NsInt,Nbord,Nsegint,Nsegbord, NmaxT
+  REAL (kind=long), DIMENSION(:),  ALLOCATABLE    :: SxxK, SyyK, SxyK
   INTEGER,            DIMENSION(:,:), POINTER :: NuSeg, NumTVoisSeg
-  REAL (kind = long), DIMENSION(:),   ALLOCATABLE ::  TauKL, dKL, AireK, AireS
+  REAL (kind = long), DIMENSION(:),   ALLOCATABLE :: SKL, TauKL, dKL, AireK, AireS, AireD, AireDSommet
 
   REAL(kind=long), DIMENSION(:,:), ALLOCATABLE  :: VitesseSeg
-
+  REAL (kind = long), DIMENSION(:), ALLOCATABLE ::  Gb 
 
 
  !------------------------------------------------------------------- 

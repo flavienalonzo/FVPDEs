@@ -4,7 +4,7 @@ Contains
 
  !======================================================
 !=====================================================
-  FUNCTION gbord(x,y,m)
+  FUNCTION gbord2(x,y,m)
     ! Calcul la solution exacte de l'equation
     !--------
     ! Modules
@@ -18,7 +18,7 @@ Contains
     !--------------------------
     REAL(kind=long), INTENT(in)     :: x, y
     integer :: m
-    REAL(kind=long)                 :: gbord
+    REAL(kind=long)                 :: gbord2
     !----------------------------------
     ! Declaration des variables locales
     !----------------------------------
@@ -38,17 +38,17 @@ Contains
 
     select case(m)
     case(1,7)
-       gbord = 1.
+       gbord2 = 1.
     case(2,8)
-       gbord  = x+y
+       gbord2  = x+y
     case(3) 
-       gbord  = x*x - y*y
+       gbord2  = x*x - y*y
     case(4)
-       gbord = cos(5.*pi*(x+y))
+       gbord2 = cos(5.*pi*(x+y))
     case(5)
-       gbord = x * (1-x)*y*(1-y)
+       gbord2 = x * (1-x)*y*(1-y)
     case(6)
-       gbord= sin(pi * x)*sin(pi *y)
+       gbord2= sin(pi * x)*sin(pi *y)
     case default 
        print*, ' pb gbord'
        stop
@@ -59,7 +59,7 @@ Contains
     prefix = oldprf
 
     RETURN
-  END FUNCTION gbord
+  END FUNCTION gbord2
 
 
 
@@ -158,9 +158,12 @@ FUNCTION fsource(x,y, m)
        fsource = (1+delta) * (pi**2) *sin(pi * x)*sin(pi *y) + theta * sin(pi * x)*sin(pi *y)
     case(8) ! ici V=1, et u=x+y
        fsource=2+ theta *(x+y)
-    case(10) 
-      !if (0.5>=x) then
+    case(10,99) 
+      !if (0.5**2<=(((x-0.39)/0.4))**2+((y-0.5)/0.5)**2) then
       fsource = 0.23*EXP(LOG(4.)*(((x-0.39)/0.4))**2+((y-0.5)/0.5)**2)   
+      !else 
+      !   fsource = 0
+      !end if
       !fsource = 3.5D-1+0.1*cos(4*pi*x)*sin(4*pi*y)
          !9.9D-1*max(1-2*x,0.D0)
       !else
@@ -183,10 +186,12 @@ FUNCTION fsource(x,y, m)
       implicit none
       REAL(kind=long), INTENT(IN) :: x,y
       REAL(kind=long) :: z 
-      if (0.45<=x.and.x<=0.55.and.0.45<=y.and.y<=0.55) then 
-         z = 0.5*exp(-30*norm2((/x,y/)-(/0.5,0.5/))) 
-      else 
-         z = 0
+      if (0.22<=x.and.x<=0.28.and.0.25<=y.and.y<=0.35) then 
+         z = 0.2D0!0.5*exp(-30*norm2((/x,y/)-(/0.5,0.5/))) 
+      else if (0.2<=x.and.x<=0.3.and.0.2<=y.and.y<=0.4) then
+         z = 0.3D0
+      else
+         z = 0.D0
       end if
   end function cond_ini
 
